@@ -254,7 +254,22 @@ export class Atomicals implements APIInterface {
   async mintDftInteractive(address: string, ticker: string, WIF: string, options: BaseRequestOptions): Promise<CommandResultInterface> {
     try {
       await this.electrumApi.open();
-      const command: CommandInterface = new MintInteractiveDftCommand(this.electrumApi, address, ticker, WIF, options);
+      const command: CommandInterface = new MintInteractiveDftCommand(this.electrumApi, address, ticker, WIF, options, []);
+      return await command.run();
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.toString(),
+        error
+      }
+    } finally {
+      this.electrumApi.close();
+    }
+  }
+  async mintDftMultiWallets(wallets, ticker: string, options: BaseRequestOptions): Promise<CommandResultInterface> {
+    try {
+      await this.electrumApi.open();
+      const command: CommandInterface = new MintInteractiveDftCommand(this.electrumApi, "null", ticker, "null", options, wallets);
       return await command.run();
     } catch (error: any) {
       return {

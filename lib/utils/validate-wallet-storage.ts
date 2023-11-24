@@ -7,7 +7,7 @@ const ECPair = ECPairFactory(ecc);
 import * as bip39 from 'bip39';
 import * as fs from 'fs';
 import BIP32Factory from 'bip32';
-import { jsonFileReader } from './file-utils';
+import { jsonFileReader, fileReader } from './file-utils';
 import { toXOnly } from './create-key-pair';
 const bip32 = BIP32Factory(ecc);
 
@@ -30,6 +30,7 @@ export interface IValidatedWalletInfo {
 
 export const validateWalletStorage = async (): Promise<IValidatedWalletInfo> => {
   try {
+    
     const wallet: any = await jsonFileReader(WALLET_FILE);
     if (!wallet.phrase) {
       console.log(`phrase field not found in ${WALLET_FILE}`);
@@ -178,6 +179,120 @@ export const validateWalletStorage = async (): Promise<IValidatedWalletInfo> => 
       },
       imported
     };
+
+  } catch (err) {
+    console.log(`Error reading ${WALLET_FILE}. Create a new wallet with "npm cli wallet-init"`)
+    throw err;
+  }
+}
+
+export const loadWallets = async (path): Promise<Object> => {
+  try {
+    /* read from */
+    const str: any = await fileReader(path);
+    return String(str).split('\n').map((line) => {
+      const [wif, counts] = line.split(',');
+      return {
+        pk: wif,
+        counts: parseInt(counts)
+      }
+    })
+
+  //   const seed = await bip39.mnemonicToSeed(wallet.phrase);
+  //   const rootKey = bip32.fromSeed(seed);
+  //   const derivePathPrimary = `m/44'/0'/0'/0/0`;
+  //   const childNodePrimary = rootKey.derivePath(derivePathPrimary);
+  //   const childNodeXOnlyPubkeyPrimary = toXOnly(childNodePrimary.publicKey);
+  //   const p2trPrimary = bitcoin.payments.p2tr({
+  //     internalPubkey: childNodeXOnlyPubkeyPrimary
+  //   });
+  //   if (!p2trPrimary.address || !p2trPrimary.output) {
+  //       throw "error creating p2tr primary"
+  //   }
+  //   const derivePathFunding = `m/44'/0'/0'/1/0`;
+  //   const childNodeFunding = rootKey.derivePath(derivePathFunding);
+  //   const childNodeXOnlyPubkeyFunding = toXOnly(childNodeFunding.publicKey);
+  //   const p2trFunding = bitcoin.payments.p2tr({
+  //     internalPubkey: childNodeXOnlyPubkeyFunding
+  //   });
+  //   if (!p2trFunding.address || !p2trFunding.output) {
+  //       throw "error creating p2tr funding"
+  //   }
+  //  // const derivePathFunding = `m/44'/0'/0'/1/0`;
+  //   //const childNodeFunding = rootKey.derivePath(derivePathFunding);
+  //  // const { address } = bitcoin.payments.p2pkh({ pubkey: childNode.publicKey });
+  //  //  const wif = childNodePrimary.toWIF();
+  //   const keypairPrimary = ECPair.fromWIF(wallet.primary.WIF);
+
+  //   if (childNodePrimary.toWIF() !== wallet.primary.WIF) {
+  //     throw 'primary wif does not match';
+  //   }
+
+  //   const p2trPrimaryCheck = bitcoin.payments.p2tr({
+  //     internalPubkey: toXOnly(keypairPrimary.publicKey)
+  //   });
+
+  //   if (p2trPrimaryCheck.address !== p2trPrimary.address && p2trPrimary.address !== wallet.primary.address) {
+  //     const m = `primary address is not correct and does not match associated phrase at ${derivePathPrimary}. Found: ` + p2trPrimaryCheck.address;
+  //     console.log(m);
+  //     throw new Error(m);
+  //   }
+
+  //   const keypairFunding = ECPair.fromWIF(wallet.funding.WIF);
+
+  //   if (childNodeFunding.toWIF() !== wallet.funding.WIF) {
+  //     throw 'funding wif does not match';
+  //   }
+    
+  //   const p2trFundingCheck = bitcoin.payments.p2tr({
+  //     internalPubkey: toXOnly(keypairFunding.publicKey)
+  //   });
+
+  //   if (p2trFundingCheck.address !== p2trFundingCheck.address && p2trFundingCheck.address !== wallet.funding.address) {
+  //     const m = `funding address is not correct and does not match associated phrase at ${derivePathFunding}. Found: ` + p2trFundingCheck.address;
+  //     console.log(m);
+  //     throw new Error(m);
+  //   }
+ 
+  //   // Now we loop over every imported wallet and validate that they are correct
+  //   const imported = {}
+  //   for (const prop in wallet.imported) {
+  //     if (!wallet.imported.hasOwnProperty(prop)) {
+  //       continue;
+  //     }
+  //     // Get the wif and the address and ensure they match
+  //     const importedKeypair = ECPair.fromWIF(wallet.imported[prop].WIF);
+  //     // Sanity check
+  //     if (importedKeypair.toWIF() !== wallet.imported[prop].WIF) {
+  //       throw 'Imported WIF does not match';
+  //     }
+      
+  //     const p2trImported = bitcoin.payments.p2tr({
+  //       internalPubkey: toXOnly(importedKeypair.publicKey)
+  //     });
+
+  //     if (p2trImported.address !== wallet.imported[prop].address) {
+  //       throw `Imported address does not match for alias ${prop}. Expected: ` + wallet.imported[prop].address + ', Found: ' + p2trImported.address;
+  //     }
+  //     imported[prop] = {
+  //       address: p2trImported.address,
+  //       WIF: wallet.imported[prop].WIF
+  //     }
+  //   }
+
+  //   return {
+  //     primary: {
+  //       childNode: childNodePrimary,
+  //       address: p2trPrimary.address,
+  //       WIF: childNodePrimary.toWIF()
+  //     },
+  //     funding: {
+  //       childNode: childNodeFunding,
+  //       address: p2trFunding.address,
+  //       WIF: childNodeFunding.toWIF()
+  //     },
+  //     imported
+  //   };
 
   } catch (err) {
     console.log(`Error reading ${WALLET_FILE}. Create a new wallet with "npm cli wallet-init"`)

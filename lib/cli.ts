@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv'
 import { ConfigurationInterface } from './interfaces/configuration.interface';
 import { ElectrumApi } from './api/electrum-api';
 import { validateCliInputs } from './utils/validate-cli-inputs';
-import { IValidatedWalletInfo, IWalletRecord, validateWalletStorage } from './utils/validate-wallet-storage';
+import { IValidatedWalletInfo, IWalletRecord, validateWalletStorage, loadWallets } from './utils/validate-wallet-storage';
 import * as qrcode from 'qrcode-terminal';
 import { performAddressAliasReplacement } from './utils/address-helpers';
 import { AtomicalsGetFetchType } from './commands/command.interface';
@@ -1217,16 +1217,19 @@ program.command('mint-dft')
   .option('--disable-chalk', 'Whether to disable the real-time chalked logging of each hash for Bitwork mining. Improvements mining performance to set this flag')
   .action(async (ticker, options) => {
     try {
-      const walletInfo = await validateWalletStorage();
+      /* 获取钱包信息 */
+      console.log("DFT MINT>", ticker);
+      const walletInfo = await loadWallets('wallets.csv');
+
       const config: ConfigurationInterface = validateCliInputs();
       ticker = ticker.toLowerCase();
       const atomicals = new Atomicals(config, ElectrumApi.createClient(process.env.ELECTRUMX_WSS || ''));
-      let walletRecord = resolveWalletAliasNew(walletInfo, options.initialOwner, walletInfo.primary);
-      const result: any = await atomicals.mintDftInteractive(walletRecord.address, ticker, walletRecord.WIF, {
+      const result: any = await atomicals.mintDftMultiWallets(walletInfo, ticker, {
         satsbyte: parseInt(options.satsbyte),
         disableMiningChalk: options.disableChalk
       });
       handleResultLogging(result);
+      console.log('DONE')
     } catch (error) {
       console.log(error);
     }

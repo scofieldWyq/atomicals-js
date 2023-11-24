@@ -22,16 +22,16 @@ export class MintInteractiveDftCommand implements CommandInterface {
     private ticker: string,
     private fundingWIF: string,
     private options: BaseRequestOptions,
+    private wallets: Array<Object>,
   ) {
     this.options = checkBaseRequestOptions(this.options)
     this.ticker = this.ticker.startsWith('$') ? this.ticker.substring(1) : this.ticker;
+    this.wallets = wallets;
   }
-  async run(): Promise<any> {
-
+  async runOnce(wallet: any): Promise<any> {
     // Prepare the keys
-    const keypairRaw = ECPair.fromWIF(
-      this.fundingWIF,
-    );
+    console.log(wallet);
+    const keypairRaw = ECPair.fromWIF(wallet.pk);
     const keypair = getKeypairInfo(keypairRaw);
     const filesData: any[] = await prepareArgsMetaCtx(
       {
@@ -39,8 +39,8 @@ export class MintInteractiveDftCommand implements CommandInterface {
       }, undefined, undefined)
 
     logBanner('Mint Interactive FT (Decentralized)');
-    console.log("Atomical type:", 'FUNGIBLE (decentralized)', filesData, this.ticker);
-    console.log("Mint for ticker: ", this.ticker);
+    // console.log(`[${wallet.pk.substring(0, 5)}]`, "Atomical type:", 'FUNGIBLE (decentralized)', filesData, this.ticker);
+    console.log(`[${wallet.pk.substring(0, 5)}]`, "Mint for ticker: ", this.ticker);
 
     const atomicalIdResult = await this.electrumApi.atomicalsGetByTicker(this.ticker);
     const atomicalResponse = await this.electrumApi.atomicalsGet(atomicalIdResult.result.atomical_id);
@@ -65,7 +65,7 @@ export class MintInteractiveDftCommand implements CommandInterface {
     if (perAmountMint <= 0 || perAmountMint >= 100000000) {
       throw new Error('Per amount mint must be > 0 and less than or equal to 100,000,000')
     }
-    console.log("Per mint amount:", perAmountMint);
+    console.log(`[${wallet.pk.substring(0, 5)}]`, "Per mint amount:", perAmountMint);
 
     const atomicalBuilder = new AtomicalOperationBuilder({
       electrumApi: this.electrumApi,
@@ -104,7 +104,96 @@ export class MintInteractiveDftCommand implements CommandInterface {
       value: perAmountMint
     })
 
-    const result = await atomicalBuilder.start(this.fundingWIF);
+    // const result = await atomicalBuilder.start(this.fundingWIF);
+    const result = 'OK'
+    return {
+      success: true,
+      data: result
+    }
+  }
+  async run(): Promise<any> {
+
+    // Prepare the keys
+    // const keypairRaw = ECPair.fromWIF(
+    //   this.fundingWIF,
+    // );
+    // const keypair = getKeypairInfo(keypairRaw);
+    // const filesData: any[] = await prepareArgsMetaCtx(
+    //   {
+    //     mint_ticker: this.ticker,
+    //   }, undefined, undefined)
+
+    // logBanner('Mint Interactive FT (Decentralized)');
+    // console.log("Atomical type:", 'FUNGIBLE (decentralized)', filesData, this.ticker);
+    // console.log("Mint for ticker: ", this.ticker);
+
+    // const atomicalIdResult = await this.electrumApi.atomicalsGetByTicker(this.ticker);
+    // const atomicalResponse = await this.electrumApi.atomicalsGet(atomicalIdResult.result.atomical_id);
+    // const globalInfo = atomicalResponse.global;
+    // const atomicalInfo = atomicalResponse.result;
+    // const atomicalDecorated = decorateAtomical(atomicalInfo);
+
+    // console.log(globalInfo, atomicalDecorated);
+
+    // if (!atomicalDecorated['$ticker'] || atomicalDecorated['$ticker'] != this.ticker) {
+    //   throw new Error('Ticker being requested does not match the initialized decentralized FT mint: ' + atomicalDecorated)
+    // }
+
+    // if (!atomicalDecorated['subtype'] || atomicalDecorated['subtype'] != 'decentralized') {
+    //   throw new Error('Subtype must be decentralized fungible token type')
+    // }
+
+    // if (atomicalDecorated['$mint_height'] > globalInfo['height']) {
+    //   throw new Error(`Mint height is invalid. height=${globalInfo['height']}, $mint_height=${atomicalDecorated['$mint_height']}`)
+    // }
+    // const perAmountMint = atomicalDecorated['$mint_amount'];
+    // if (perAmountMint <= 0 || perAmountMint >= 100000000) {
+    //   throw new Error('Per amount mint must be > 0 and less than or equal to 100,000,000')
+    // }
+    // console.log("Per mint amount:", perAmountMint);
+
+    // const atomicalBuilder = new AtomicalOperationBuilder({
+    //   electrumApi: this.electrumApi,
+    //   satsbyte: this.options.satsbyte,
+    //   address: this.address,
+    //   disableMiningChalk: this.options.disableMiningChalk,
+    //   opType: 'dmt',
+    //   dmtOptions: {
+    //     mintAmount: perAmountMint,
+    //     ticker: this.ticker,
+    //   },
+    //   meta: this.options.meta,
+    //   ctx: this.options.ctx,
+    //   init: this.options.init,
+    // });
+
+    // // Attach any default data
+    // // Attach a container request
+    // if (this.options.container)
+    //   atomicalBuilder.setContainerMembership(this.options.container);
+
+    // // Attach any requested bitwork OR automatically request bitwork if the parent decentralized ft requires it
+    // const mint_bitworkc = atomicalDecorated['$mint_bitworkc'] || this.options.bitworkc
+    // if (mint_bitworkc) {
+    //   atomicalBuilder.setBitworkCommit(mint_bitworkc);
+    // }
+
+    // const mint_bitworkr = atomicalDecorated['$mint_bitworkr'] || this.options.bitworkr
+    // if (mint_bitworkr) {
+    //   atomicalBuilder.setBitworkReveal(mint_bitworkr);
+    // }
+
+    // // The receiver output of the deploy
+    // atomicalBuilder.addOutput({
+    //   address: this.address,
+    //   value: perAmountMint
+    // })
+
+    // const result = await atomicalBuilder.start(this.fundingWIF);
+    const result = await Promise.all(this.wallets.map(async (wallet: any) => {
+      return await this.runOnce(wallet);
+    }));
+
     return {
       success: true,
       data: result
