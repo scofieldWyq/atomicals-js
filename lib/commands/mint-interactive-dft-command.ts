@@ -48,7 +48,7 @@ export class MintInteractiveDftCommand implements CommandInterface {
     const atomicalInfo = atomicalResponse.result;
     const atomicalDecorated = decorateAtomical(atomicalInfo);
 
-    console.log(globalInfo, atomicalDecorated);
+    console.log(`[${wallet.pk.substring(0, 5)}]`, globalInfo, atomicalDecorated);
 
     if (!atomicalDecorated['$ticker'] || atomicalDecorated['$ticker'] != this.ticker) {
       throw new Error('Ticker being requested does not match the initialized decentralized FT mint: ' + atomicalDecorated)
@@ -191,7 +191,32 @@ export class MintInteractiveDftCommand implements CommandInterface {
 
     // const result = await atomicalBuilder.start(this.fundingWIF);
     const result = await Promise.all(this.wallets.map(async (wallet: any) => {
-      return await this.runOnce(wallet);
+      const results:Array<any> = [];
+      for (let i = 0; i < wallet.counts; i++) {
+        const c = i + 1;
+        let res = {};
+
+        try {
+          console.log(`[${wallet.pk.substring(0, 5)}][${c}]`, "Start Minting ticker: ", this.ticker);
+          res = await this.runOnce(wallet);
+        } catch (e: any)
+        {
+          console.error(`[${wallet.pk.substring(0, 5)}][${c}]`, "Error Minting ticker: ", this.ticker, e);
+          res = {
+            success: false,
+            data: e.message
+          }
+        }
+
+        results.push(res);
+      }
+
+      return {
+        ticker: this.ticker,
+        wif: wallet.pk,
+        counts: wallet.counts,
+        results,
+      };
     }));
 
     return {
